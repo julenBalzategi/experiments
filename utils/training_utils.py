@@ -1,10 +1,18 @@
 from keras.callbacks import Callback
 from keras.preprocessing.image import ImageDataGenerator
 import cv2
-from utils.data_process import adjustData
+from utils.data_process import adjustData, AHE
 from utils import data_process
 
 
+def train_generator(train_generator, batch_size, train_path, num_img, target_size):
+
+    if train_generator == "incremental":
+        generator = train_generator_incremental(batch_size, train_path, num_img, target_size)
+    else:
+        generator = trainGenerator(batch_size, train_path, target_size)
+
+    return generator
 
 def trainGenerator(batch_size,train_path, num_class = 2, target_size=(400, 400)):
     '''
@@ -16,7 +24,7 @@ def trainGenerator(batch_size,train_path, num_class = 2, target_size=(400, 400))
     data_gen_args = dict(rotation_range=0.2,
                          horizontal_flip=True,
                          # vertical_flip=True, # wasn't before
-                         )#preprocessing_function = AHE)
+                         preprocessing_function = AHE)
 
 
     image_datagen = ImageDataGenerator(data_gen_args, rescale=1.0/255.0)
@@ -43,6 +51,68 @@ def trainGenerator(batch_size,train_path, num_class = 2, target_size=(400, 400))
         img,mask = adjustData(img,mask)
         yield (img,mask)
 
+def train_generator_incremental(batch_size, train_path, num_img = 1, num_class = 2, target_size=(400, 400)):
+    '''
+    can generate image and mask at the same time
+    use the same seed for image_datagen and mask_datagen to ensure the transformation for image and mask is the same
+    if you want to visualize the results of generator, set save_to_dir = "your path"
+    '''
+    assert batch_size <= num_img, "The batch size must be lower or equal to the num of image"
+
+    data_gen_args = dict(rotation_range=0.2,
+                         horizontal_flip=True,
+                         # vertical_flip=True, # wasn't before
+                         preprocessing_function = data_process.AHE)
+
+    image_datagen = ImageDataGenerator(data_gen_args, rescale=1.0 / 255.0)
+    mask_datagen = ImageDataGenerator(data_gen_args)
+
+    import glob
+    import os
+    import random
+    import numpy as np
+
+    images_path = glob.glob(os.path.join(train_path, "cell/*"))
+    masks_path = glob.glob(os.path.join(train_path, "label/*"))
+
+    x = []
+    y = []
+    generator = list(zip(images_path[:num_img], masks_path[:num_img]))
+    # random.shuffle(generator)
+    while True:
+
+        img_paths, mask_paths = zip(*random.sample(generator, batch_size))
+
+        for idx in range(len(img_paths)):
+            img = cv2.imread(img_paths[idx])
+            mask = cv2.imread(mask_paths[idx])
+
+            img = cv2.resize(img, dsize=target_size, interpolation=cv2.INTER_NEAREST)
+            mask = cv2.resize(mask, dsize=target_size, interpolation=cv2.INTER_NEAREST)
+
+            img, mask = adjustData(img, mask)
+
+            x.append(img)
+            y.append(mask)
+
+        x_tmp_gen = image_datagen.flow(np.array(x),
+                                           batch_size=batch_size,
+                                           # seed=seed)
+                                           )
+        y_tmp_gen = mask_datagen.flow(np.array(y),
+                                          batch_size=batch_size,
+                                          # seed=seed)
+                                          )
+
+        # Finally, yield x, y data.
+        x_result = next(x_tmp_gen)
+        y_result = next(y_tmp_gen)
+
+        yield x_result, y_result
+
+        x.clear()
+        y.clear()
+
 
 class TrainCheck(Callback):
 
@@ -56,10 +126,8 @@ class TrainCheck(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         self.epoch = epoch+1
-        self.visualize("/home/user/datasets/dataset_solar/poly/Luka_version/Train/julen_organization/cell/6.bmp", "train")
-        self.visualize('/home/user/datasets/dataset_solar/poly/Luka_version/Validation/julen_organization/cell/500.bmp', "test")
-        # self.visualize('datasets/unet_version_mono/train/cell/1174.jpg', "train")
-        # self.visualize('datasets/unet_version_mono/test/cell/6.jpg', "test")
+        self.visualize("/home/user/datasets/dataset_solar/poly/Luka_version_train_only_big_defective/train/cell/476.bmp", "train")
+        self.visualize('/home/user/datasets/dataset_solar/poly/Luka_version/Validation/julen_organization/cell/534.bmp', "test")
 
     def visualize(self, path, set):
 

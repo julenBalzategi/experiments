@@ -1,5 +1,15 @@
 from keras.optimizers import *
 
+def dice_coeff(pred, target):
+    smooth = 1.
+    num = pred.size(0)
+    m1 = pred.view(num, -1)  # Flatten
+    m2 = target.view(num, -1)  # Flatten
+    intersection = (m1 * m2).sum()
+
+    return (2. * intersection + smooth) / (m1.sum() + m2.sum() + smooth)
+
+
 def dice_coeff_orig(y_true, y_pred):
     ret = (2. * K.sum(y_true * y_pred) + 1.) / (K.sum(y_true) + K.sum(y_pred) + 1.)
     return ret
@@ -110,3 +120,10 @@ def weighted_dice_coef(y_true, y_pred):
 
 def weighted_dice_coef_loss(y_true, y_pred):
     return 1 - weighted_dice_coef(y_true, y_pred)
+
+def iou(y_true, y_pred):
+    intersection = y_true * y_pred
+    notTrue = 1 - y_true
+    union = y_true + (notTrue * y_pred)
+
+    return (K.sum(intersection, axis=-1) + K.epsilon()) / (K.sum(union, axis=-1) + K.epsilon())

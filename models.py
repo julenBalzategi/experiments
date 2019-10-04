@@ -1,7 +1,7 @@
 from keras.models import *
 from keras.layers import *
 
-def unet(pretrained_weights=None, input_size=(256, 256, 1)):
+def unet(pretrained_weights="None", input_size=(256, 256, 1)):
     inputs = Input(input_size)
     conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal', name='block1_conv1')(inputs)
     conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal', name='block1_conv2')(conv1)
@@ -27,7 +27,7 @@ def unet(pretrained_weights=None, input_size=(256, 256, 1)):
     conv5 = BatchNormalization()(conv5)
     drop5 = Dropout(0.5)(conv5)
 
-    if pretrained_weights is not None:
+    if pretrained_weights != "None":
         vgg16 = Model(inputs, conv5)
         vgg16.load_weights(pretrained_weights, by_name=True)
         # vgg16.trainable = False
@@ -64,7 +64,7 @@ def unet(pretrained_weights=None, input_size=(256, 256, 1)):
 
     return model
 
-def unet_reduced(pretrained_weights=None, input_size=(256, 256, 1)):
+def unet_reduced(pretrained_weights="None", input_size=(256, 256, 1)):
     inputs = Input(input_size)
     conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal', name='block1_conv1')(inputs)
     conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal', name='block1_conv2')(conv1)
@@ -77,7 +77,7 @@ def unet_reduced(pretrained_weights=None, input_size=(256, 256, 1)):
     pool2 = MaxPooling2D(pool_size=(2, 2))(drop2)
 
 
-    if pretrained_weights is not None:
+    if pretrained_weights != "None":
         vgg16 = Model(inputs, conv2)
         vgg16.load_weights(pretrained_weights, by_name=True)
 

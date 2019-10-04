@@ -3,6 +3,7 @@ from skimage import exposure
 
 def adjustData(img,mask):
     # img = img / 255
+
     mask = mask /255
     mask[mask > 0.8] = 1
     mask[mask <= 0.8] = 0
@@ -16,6 +17,7 @@ def adjustData(img,mask):
     #     plt.show()
 
     return (img,mask)
+
 
 
 def AHE(img):
