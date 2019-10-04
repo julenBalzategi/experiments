@@ -81,11 +81,11 @@ def train_generator_incremental(batch_size, train_path, num_img = 1, num_class =
     # random.shuffle(generator)
     while True:
 
-        img_paths, mask_paths = zip(*random.sample(generator, batch_size))
+        train_pair = random.sample(generator, batch_size)
 
-        for idx in range(len(img_paths)):
-            img = cv2.imread(img_paths[idx])
-            mask = cv2.imread(mask_paths[idx])
+        for idx in range(batch_size):
+            img = cv2.imread(train_pair[idx][0])
+            mask = cv2.imread(train_pair[idx][1])
 
             img = cv2.resize(img, dsize=target_size, interpolation=cv2.INTER_NEAREST)
             mask = cv2.resize(mask, dsize=target_size, interpolation=cv2.INTER_NEAREST)
