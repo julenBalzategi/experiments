@@ -1,4 +1,5 @@
 from keras.optimizers import *
+from keras.losses import binary_crossentropy
 
 def dice_coeff(pred, target):
     smooth = 1.
@@ -8,7 +9,6 @@ def dice_coeff(pred, target):
     intersection = (m1 * m2).sum()
 
     return (2. * intersection + smooth) / (m1.sum() + m2.sum() + smooth)
-
 
 def dice_coeff_orig(y_true, y_pred):
     ret = (2. * K.sum(y_true * y_pred) + 1.) / (K.sum(y_true) + K.sum(y_pred) + 1.)
@@ -121,9 +121,15 @@ def weighted_dice_coef(y_true, y_pred):
 def weighted_dice_coef_loss(y_true, y_pred):
     return 1 - weighted_dice_coef(y_true, y_pred)
 
+def binary_cross_entropy(y_true, y_pred):
+    return binary_crossentropy(y_true, y_pred)
+
 def iou(y_true, y_pred):
     intersection = y_true * y_pred
     notTrue = 1 - y_true
     union = y_true + (notTrue * y_pred)
 
     return (K.sum(intersection, axis=-1) + K.epsilon()) / (K.sum(union, axis=-1) + K.epsilon())
+
+def iou_loss(y_true, y_pred):
+    return 1 - iou(y_true, y_pred)

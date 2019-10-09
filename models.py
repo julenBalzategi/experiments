@@ -1,7 +1,7 @@
 from keras.models import *
 from keras.layers import *
 
-def unet(pretrained_weights="None", input_size=(256, 256, 1)):
+def unet(pretrained_weights="None", input_size=(256, 256, 1), final_activation="sigmoid"):
     inputs = Input(input_size)
     conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal', name='block1_conv1')(inputs)
     conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal', name='block1_conv2')(conv1)
@@ -57,14 +57,14 @@ def unet(pretrained_weights="None", input_size=(256, 256, 1)):
     conv9 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv9)
     conv9 = Conv2D(2, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv9)
     conv9 = BatchNormalization()(conv9)
-    conv10 = Conv2D(1, 1, activation='sigmoid')(conv9)
+    conv10 = Conv2D(1, 1, activation=final_activation)(conv9)
 
     model = Model(input=inputs, output=conv10)
 
 
     return model
 
-def unet_reduced(pretrained_weights="None", input_size=(256, 256, 1)):
+def unet_reduced(pretrained_weights="None", input_size=(256, 256, 1), final_activation="sigmoid"):
     inputs = Input(input_size)
     conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal', name='block1_conv1')(inputs)
     conv1 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal', name='block1_conv2')(conv1)
@@ -94,7 +94,7 @@ def unet_reduced(pretrained_weights="None", input_size=(256, 256, 1)):
     conv9 = Conv2D(64, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv9)
     conv9 = Conv2D(2, 3, activation='relu', padding='same', kernel_initializer='he_normal')(conv9)
     conv9 = BatchNormalization()(conv9)
-    conv10 = Conv2D(1, 1, activation='sigmoid')(conv9)
+    conv10 = Conv2D(1, 1, activation=final_activation)(conv9)
 
     model = Model(input=inputs, output=conv10)
 

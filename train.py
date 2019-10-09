@@ -33,7 +33,8 @@ for test in reader:
 
     ##INITIALIZE MODEL############
     model = getattr(models, test.model)(input_size=(test.input_size, test.input_size, 3),
-                                        pretrained_weights=test.pretrained_weights)
+                                        pretrained_weights=test.pretrained_weights,
+                                        final_activation=test.final_activation)
 
     model.compile(optimizer=getattr(optim, test.optim)(lr=test.lr),
                   loss=getattr(losses, test.loss),

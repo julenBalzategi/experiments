@@ -24,7 +24,8 @@ def trainGenerator(batch_size,train_path, num_class = 2, target_size=(400, 400))
     data_gen_args = dict(rotation_range=0.2,
                          horizontal_flip=True,
                          # vertical_flip=True, # wasn't before
-                         preprocessing_function = AHE)
+                         #preprocessing_function = AHE
+                         )
 
 
     image_datagen = ImageDataGenerator(data_gen_args, rescale=1.0/255.0)
@@ -62,7 +63,7 @@ def train_generator_incremental(batch_size, train_path, num_img = 1, num_class =
     data_gen_args = dict(rotation_range=0.2,
                          horizontal_flip=True,
                          # vertical_flip=True, # wasn't before
-                         preprocessing_function = data_process.AHE)
+                         )#preprocessing_function = data_process.AHE)
 
     image_datagen = ImageDataGenerator(data_gen_args, rescale=1.0 / 255.0)
     mask_datagen = ImageDataGenerator(data_gen_args)
@@ -126,7 +127,7 @@ class TrainCheck(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         self.epoch = epoch+1
-        self.visualize("/home/user/datasets/dataset_solar/poly/Luka_version_train_only_big_defective/train/cell/476.bmp", "train")
+        self.visualize("/home/user/datasets/dataset_solar/poly/Luka_version_train_only_defective/train/cell/476.bmp", "train")
         self.visualize('/home/user/datasets/dataset_solar/poly/Luka_version/Validation/julen_organization/cell/534.bmp', "test")
 
     def visualize(self, path, set):
@@ -153,9 +154,9 @@ def testGenerator(test_path, target_size = (400,400)):
 
     return test_generator, len(test_generator.filenames), test_generator.filenames
 
-def saveResults(results, filenames, test_name):
+def saveResults(results, filenames, test_name, sheet):
     for idx in range(len(results)):
         name = filenames[idx]
         img = results[idx]*255
         img = 255 - img
-        cv2.imwrite("./tests/{}/test_results/{}".format(test_name, name.split("/")[1]), img)
+        cv2.imwrite("./tests/{}/{}/test_results/{}".format(sheet,test_name, name.split("/")[1]), img)

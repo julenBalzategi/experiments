@@ -15,3 +15,4 @@ def create_test_folder(test_name, sheet):
     create_folder("./tests/{}".format(sheet))
     create_folder("./tests/{}/{}".format(sheet, test_name))
     create_folder("./tests/{}/{}/training_images".format(sheet, test_name))
+    create_folder("./tests/{}/{}/test_results".format(sheet, test_name))
