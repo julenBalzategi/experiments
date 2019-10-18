@@ -31,7 +31,7 @@ for test in reader:
 
     train_check = TrainCheck(sheet, test.name, test.input_size, test.train_preprocess)
 
-    ##INITIALIZE MODEL############
+    ##INITIALIZE MODEL###########
     model = getattr(models, test.model)(input_size=(test.input_size, test.input_size, 3),
                                         pretrained_weights=test.pretrained_weights,
                                         final_activation=test.final_activation)
@@ -46,7 +46,8 @@ for test in reader:
                                 batch_size=test.batch,
                                 train_path=train_dataset,
                                 num_img=test.num_img,
-                                target_size=(test.input_size, test.input_size))
+                                target_size=(test.input_size, test.input_size),
+                                aug=test.aug)
 
     ##TRAIN THE MODEL#######################
     history = model.fit_generator(
@@ -58,8 +59,15 @@ for test in reader:
 
     ##SAVE MODEL###################
     model.save("./tests/{}/{}/{}.h5".format(sheet, test.name, test.name))
+
+    model_json = model.to_json()
+    with open("./tests/{}/{}/{}_model_arch.json".format(sheet, test.name, test.name), "w") as json_file:
+        json_file.write(model_json)
+    # serialize weights to HDF5
+    model.save_weights("./tests/{}/{}/{}_model.h5".format(sheet, test.name, test.name))
+
     history_dict = history.history
-    json.dump(history_dict, open("./tests/{}/{}/json_history_orig".format(sheet, test.name), 'w'))
+    json.dump(history_dict, open("./tests/{}/{}/{}_json_history_orig".format(sheet, test.name, test.name), 'w'))
 
 
 

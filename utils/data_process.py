@@ -1,5 +1,7 @@
 import numpy as np
 from skimage import exposure
+import random
+import cv2
 
 def adjustData(img,mask):
     # img = img / 255
@@ -32,3 +34,33 @@ def unet_preprocess(img):
     img = np.expand_dims(img, axis=0)
 
     return img
+
+def rotation(img, mask):
+    number = random.randint(1, 4)
+    (h, w) = img.shape[:2]
+    center = (w / 2, h / 2)
+    M = cv2.getRotationMatrix2D(center, 0, 1.0)
+
+    if number == 1:
+        M = cv2.getRotationMatrix2D(center, 90, 1.0)
+    elif number == 2:
+        M = cv2.getRotationMatrix2D(center, 180, 1.0)
+    elif number == 3:
+        M = cv2.getRotationMatrix2D(center, 270, 1.0)
+
+    img = cv2.warpAffine(img, M, (w, h))
+    mask = cv2.warpAffine(mask, M, (w, h))
+    return img, mask
+
+
+def get_augmented(aug, img, mask):
+
+    if aug == "AHE":
+        img = AHE(img)
+    elif aug == "AHE_rotation":
+        img = AHE(img)
+        img, mask = rotation(img, mask)
+    elif aug == "rotation":
+        img, mask = rotation(img, mask)
+
+    return img, mask
