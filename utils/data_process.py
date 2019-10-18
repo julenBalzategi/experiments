@@ -60,7 +60,10 @@ def get_augmented(aug, img, mask):
     elif aug == "AHE_rotation":
         img = AHE(img)
         img, mask = rotation(img, mask)
+        mask = np.expand_dims(mask, axis=2)
     elif aug == "rotation":
         img, mask = rotation(img, mask)
+        mask = np.expand_dims(mask, axis=2)
+
 
     return img, mask

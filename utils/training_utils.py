@@ -52,7 +52,8 @@ def trainGenerator(batch_size,train_path, num_class = 2, target_size=(400, 400),
     train_generator = zip(image_generator, mask_generator)
     for (img,mask) in train_generator:
         img,mask = adjustData(img,mask)
-        img,mask = data_process.get_augmented(aug, img,mask)
+        for idx in range(len(img[:])):
+            img[idx],mask[idx] = data_process.get_augmented(aug, img[idx], mask[idx])
         yield (img,mask)
 
 def train_generator_custom(batch_size, train_path, num_img = 1, num_class = 2, target_size=(400, 400), aug="None"):
@@ -126,18 +127,6 @@ def train_generator_custom(batch_size, train_path, num_img = 1, num_class = 2, t
 
         x.clear()
         y.clear()
-
-
-def custom_aug(aug):
-    data_gen_args = dict()
-    if aug == "AHE":
-        data_gen_args = dict(preprocessing_function=data_process.AHE)
-    elif aug == "AHE_rotation":
-        data_gen_args = dict(preprocessing_function = data_process.AHE_rotation)
-    elif aug == "rotation":
-        data_gen_args = dict(preprocessing_function=data_process.rotation)
-
-    return data_gen_args
 
 
 class TrainCheck(Callback):
