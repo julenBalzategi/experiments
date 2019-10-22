@@ -7,6 +7,7 @@ from utils.excel_reader import Excel_reader
 import models
 
 test_dataset = "/home/jbalzategi/datasets/dataset_solar/poly/Luka_version/Validation/julen_organization/"
+# test_dataset = "/home/jbalzategi/neuronel/neuronel_unet/new/datasets/poly/Luka_version/Validation/julen_organization_old/"
 
 sheet = "Hoja1"
 reader = Excel_reader("./tests/Libro3.xlsx", sheet)

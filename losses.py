@@ -12,6 +12,7 @@ def dice_coeff(pred, target):
 
 def dice_coeff_orig(y_true, y_pred):
     ret = (2. * K.sum(y_true * y_pred) + 1.) / (K.sum(y_true) + K.sum(y_pred) + 1.)
+    ret = ret / K.cast(K.shape(y_pred)[0], float) #divide by number of batches
     return ret
 
 def dice_coeff_orig_loss(y_true, y_pred):

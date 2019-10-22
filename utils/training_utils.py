@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def train_generator(train_generator, batch_size, train_path, num_img, target_size, aug):
+def get_train_generator(train_generator, batch_size, train_path, num_img, target_size, aug):
 
     if train_generator == "custom":
         generator = train_generator_custom(batch_size, train_path, num_img, target_size, aug=aug)
@@ -23,11 +23,7 @@ def trainGenerator(batch_size,train_path, num_class = 2, target_size=(400, 400),
     if you want to visualize the results of generator, set save_to_dir = "your path"
     '''
 
-    data_gen_args = dict(rotation_range=0.2,
-                         horizontal_flip=True,
-                         # vertical_flip=True, # wasn't before
-                         #preprocessing_function = AHE
-                         )
+    data_gen_args = dict(rotation_range=0.2)
 
 
     image_datagen = ImageDataGenerator(data_gen_args, rescale=1.0/255.0)
@@ -86,12 +82,12 @@ def train_generator_custom(batch_size, train_path, num_img = 1, num_class = 2, t
 
         for idx in range(batch_size):
             img = cv2.imread(train_pair[idx][0])
-            mask = cv2.imread(train_pair[idx][1])
+            mask = cv2.imread(train_pair[idx][1], 0)
 
             img = cv2.resize(img, dsize=target_size, interpolation=cv2.INTER_NEAREST)
             mask = cv2.resize(mask, dsize=target_size, interpolation=cv2.INTER_NEAREST)
 
-            img, mask = adjustData(img, mask)
+            mask = np.expand_dims(mask, 2)
 
             x.append(img)
             y.append(mask)
@@ -123,7 +119,7 @@ def train_generator_custom(batch_size, train_path, num_img = 1, num_class = 2, t
             # plt.imshow(y_result[idx])
             # plt.show()
         yield x_result, y_result
-        plt.close()
+        # plt.close()
 
         x.clear()
         y.clear()
@@ -156,7 +152,7 @@ class TrainCheck(Callback):
 
 
 def testGenerator(test_path, target_size = (400,400)):
-    data_gen_args = dict()#preprocessing_function=AHE)
+    data_gen_args = dict()#preprocessing_function=data_process.AHE)
     test_datagen = ImageDataGenerator(data_gen_args, rescale=1.0/255.0)
 
     test_generator = test_datagen.flow_from_directory(

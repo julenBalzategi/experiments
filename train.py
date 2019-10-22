@@ -1,5 +1,5 @@
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from utils.training_utils import train_generator, TrainCheck
+from utils.training_utils import get_train_generator, TrainCheck
 import keras.optimizers as optim
 import json
 
@@ -42,7 +42,7 @@ for test in reader:
 
     model.summary()
 
-    generator = train_generator(train_generator=test.train_generator,
+    generator = get_train_generator(train_generator=test.train_generator,
                                 batch_size=test.batch,
                                 train_path=train_dataset,
                                 num_img=test.num_img,
