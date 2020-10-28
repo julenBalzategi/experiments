@@ -3,7 +3,7 @@ import pandas as pd
 class Excel_reader:
 
     def __init__(self, test_path, sheet):
-        self.data = pd.read_excel(test_path, sheet_name=sheet)
+        self.data = pd.ExcelFile(test_path).parse(sheet)
         self.data = self.data.loc[:, (self.data == "Y").any()]
         self.tests = self.data.columns.values
         self.idx_test = 0
