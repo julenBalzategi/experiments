@@ -11,35 +11,18 @@ def mask_to_one_hot(mask, num_classes):
 
     return mask_ret
 
+def adjust_data(img,mask):
 
-def adjustData(img,mask):
-    # img = img / 255
-
-    import matplotlib.pyplot as plt
-    # mask = mask /255
-    mask = np.where(mask > 0.8, 0, 1)
-    # mask = np.where(mask > 0.8, 1, 0)
-
-    #cv2.imwrite("/home/jbalzategi/tmp/debug_prueba/img.bmp", img*255)
-    #cv2.imwrite("/home/jbalzategi/tmp/debug_prueba/mask.bmp", mask*255)
-    # plt.imshow(img)
-    # plt.show()
-    # plt.imshow(mask)
-    # plt.show()
+    img = img / 255
+    mask = mask / 255
+    #mask = np.where(mask > 0.8, 0, 1) #mono
+    mask = np.where(mask > 0.8, 1, 0) #poly
 
     return (img,mask)
 
-
-
-def AHE(img):
-    img_adapteq = CLAHE(img, clip_limit=0.03)
-    return img_adapteq
-
-
 def unet_preprocess(img):
     img = img / 255
-    img = AHE(img)
-    # img = np.expand_dims(img, axis=2)
+    img = CLAHE(img, clip_limit=0.03)
     img = np.expand_dims(img, axis=0)
 
     return img
@@ -59,7 +42,6 @@ def flip(img, mask):
 
     return img, mask
 
-
 def rotation(img, mask):
     number = random.randint(1, 4)
     (h, w) = img.shape[:2]
@@ -76,28 +58,6 @@ def rotation(img, mask):
     img = cv2.warpAffine(img, M, (w, h))
     mask = cv2.warpAffine(mask, M, (w, h))
     return img, mask
-
-
-def get_augmented_test(aug, img):
-    if aug == "AHE":
-        img = CLAHE(img)
-    elif aug == "AHE_rotation":
-        img = CLAHE(img)
-        img, _ = rotation(img, img)
-    elif aug == "AHE_flip":
-        img = CLAHE(img)
-        img, _ = flip(img, img)
-    elif aug == "rotation":
-        img, _ = rotation(img, img)
-    elif aug == "flip":
-        img, _ = flip(img, img)
-    elif aug == "AHE_rotation_flip":
-        img = CLAHE(img)
-        img, _ = rotation(img, img)
-        img, _ = flip(img, img)
-
-    return img
-
 
 def get_augmented(aug, img, mask):
     if aug == "AHE":
@@ -149,7 +109,16 @@ def result_map_to_img(result):
     # img[:, :, 1] = np.where(soldering, 128, img[:, :, 1])
     # img[:, :, 1] = np.where(break_, 255, img[:, :, 1])
     img[:, :, 1] = np.where(finger, 255, img[:, :, 1])
-    img[:, :, 2] = np.where(crack, 128, img[:, :, 2])
+    img[:, :, 0] = np.where(finger, 0, img[:, :, 0])
+    img[:, :, 2] = np.where(finger, 0, img[:, :, 2])
+
+    img[:, :, 0] = np.where(crack, 0, img[:, :, 0])
+    img[:, :, 2] = np.where(crack, 255, img[:, :, 2])
+    img[:, :, 1] = np.where(crack, 0, img[:, :, 1])
+
+
+    img[:, :, 1] = np.where(microcrack, 0, img[:, :, 1])
+    img[:, :, 0] = np.where(microcrack, 0, img[:, :, 0])
     img[:, :, 2] = np.where(microcrack, 255, img[:, :, 2])
 
 

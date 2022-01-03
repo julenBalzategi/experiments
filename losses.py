@@ -1,5 +1,8 @@
+import tensorflow as tf
 from keras.optimizers import *
-from keras.losses import binary_crossentropy, categorical_crossentropy
+from keras.losses import binary_crossentropy, categorical_crossentropy, mean_squared_error
+#push dev3 4
+
 
 def categorical_focal_loss(gt, pr, gamma=2.0, alpha=0.25, class_indexes=None, **kwargs):
     r"""Implementation of Focal Loss from the paper in multiclass classification
@@ -98,12 +101,9 @@ def categorical_focal_loss_fixed(y_true, y_pred):
     # Sum the losses in mini_batch
     return K.sum(loss, axis=1)
 
-
-# def categorical_cross_entropy_weighted(weights):
-    #weights = weights
 def categorical_cross_entropy_weighted_loss(y_true, y_pred):
     #weights = [1 / 200, 1 / 80, 1 / 20, 1 / 6, 1 / 3, 1 / 4]
-    weights = [0.0, 1, 1, 1]
+    weights = [1, 5]
     # background,finger crack,microcrack
 
     # scale predictions so that the class probas of each sample sum to 1
@@ -114,9 +114,6 @@ def categorical_cross_entropy_weighted_loss(y_true, y_pred):
     loss = y_true * K.log(y_pred) * weights
     loss = -K.sum(loss, -1)
     return 1 - loss
-
-# return categorical_cross_entropy_weighted_loss
-
 
 def categorical_cross_entropy(y_true, y_pred):
     return categorical_crossentropy(y_pred=y_pred, y_true=y_true)
@@ -134,9 +131,9 @@ def mix_focal_dice(y_true, y_pred):
     return dice_coeff_orig_loss(y_true, y_pred) + binary_focal_loss_fixed(y_true, y_pred)
 
 def dice_coeff_orig(y_true, y_pred):
-    y_pred = K.clip(y_pred, K.epsilon(), 1 - K.epsilon())
-    ret = (2. * K.sum(y_true * y_pred) + 1.) / (K.sum(y_true) + K.sum(y_pred) + 1.)
-    ret = ret / K.cast(K.shape(y_pred)[0], tf.float32) #divide by number of batches
+    y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
+    ret = (2. * tf.math.reduce_sum(y_true * y_pred) + 1.) / (tf.math.reduce_sum(y_true) + tf.math.reduce_sum(y_pred) + 1.)
+    ret = ret / tf.cast(tf.shape(y_pred)[0], tf.float32) #divide by number of batches
     return ret
 
 def dice_coeff_orig_loss(y_true, y_pred):
@@ -199,16 +196,6 @@ def tversky_loss(y_true, y_pred, alpha=0.3, beta=0.7, smooth=1e-10):
     answer = (truepos + smooth) / ((truepos + smooth) + fp_and_fn)
     return -answer
 
-# def binary_focal_loss(gamma=2., alpha=.25):
-#     """
-#     Binary form of focal loss.
-#       FL(p_t) = -alpha * (1 - p_t)**gamma * log(p_t)
-#       where p = sigmoid(x), p_t = p or 1 - p depending on if the label is 1 or 0, respectively.
-#     References:
-#         https://arxiv.org/pdf/1708.02002.pdf
-#     Usage:
-#      model.compile(loss=[binary_focal_loss(alpha=.25, gamma=2)], metrics=["accuracy"], optimizer=adam)
-#     """
 def binary_focal_loss_fixed(y_true, y_pred):
     gamma=2.
     alpha=.25
@@ -267,3 +254,12 @@ def iou_nobacground(y_true, y_pred):
     y_true, y_pred = gather_channels(y_true, y_pred, indexes=[int(i) for i in [0,1,1,1]])
 
     return iou(y_true, y_pred)
+
+def mse_loss(y_true, y_pred):
+
+    return mean_squared_error(y_true, y_pred)
+
+def ssim_loss(gt, y_pred, max_val=1.0):
+    return 1 - tf.reduce_mean(tf.image.ssim(gt, y_pred, max_val=max_val))
+
+

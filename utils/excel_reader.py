@@ -1,6 +1,6 @@
 import pandas as pd
 
-class Excel_reader:
+class ExcelReader:
 
     def __init__(self, test_path, sheet):
         self.data = pd.ExcelFile(test_path).parse(sheet)
