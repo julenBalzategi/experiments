@@ -22,18 +22,23 @@ reader = ExcelReader("./excel/Libro3.xlsx", sheet)
 
 poly = True if "poly" in sheet else False
 
-mlflow.set_tracking_uri(f"file:/home/jbalzategi/experiments/tests_runs/mlruns/")
-mlflow.set_registry_uri("127.0.0.1:8080")
+mlflow.set_tracking_uri("http://127.0.0.1:8080")
 
-experiment = mlflow.get_experiment_by_name(f"{sheet}")
-if experiment is None:
-    experiment = mlflow.create_experiment(f"{sheet}")
+
+exp_info = MlflowClient().get_experiment_by_name(f"{sheet}")
+exp_id = exp_info.experiment_id if exp_info else MlflowClient().create_experiment(f"{sheet}")
+
 
 
 
 for test in reader:
     # mlflow.keras.autolog()
-    with mlflow.start_run(run_name=f"{test.name}", experiment_id=f"{experiment.experiment_id}") as run:
+    with mlflow.start_run(experiment_id=exp_id) as run:
+        run_num = run.run_id = run.info.run_uuid
+
+        create_experiment_folder(test.name, sheet)
+
+        model_uri = f"runs:/{run_num}/{sheet}_{test.name}"
 
         mlflow.log_param("dataset", test.train_dataset)
         mlflow.log_param("preprocess", test.train_preprocess)
@@ -84,12 +89,6 @@ for test in reader:
 
         if test.load_model != "N":
             model = load_model_(test.load_model)
-        else:
-            #todo save model
-            #just because a bug in mlflow
-            #model.save("./model.h5")
-            #model = load_model_('./model.h5', compile=False)
-            pass
 
         # todo fix the weighted version of loss and parameter passing
         model.compile(optimizer=getattr(optim, test.optim)(lr=float(test.lr), decay=float(test.decay)),
@@ -129,7 +128,7 @@ for test in reader:
             verbose=1)
 
         ##SAVE MODEL###################
-        # model.save("./tests/{}/{}/{}.h5".format(sheet, test.name, test.name))
+        model.save("./tests_runs/{}/{}/{}.h5".format(sheet, test.name, test.name))
 #        mlflow.keras.save_model(model, f"/home/jbalzategi/experiments/tests_runs/{sheet}/{test.name}")
 
         # model_json = model.to_json()
@@ -140,3 +139,11 @@ for test in reader:
 
         # history_dict = history.history
         # json.dump(history_dict, open("./tests/{}/{}/{}_json_history_orig.json".format(sheet, test.name, test.name), 'w'))
+
+        mlflow.log_artifacts(f"./tests_runs/{sheet}/{test.name}/")
+        mlflow.keras.save_model(model, f"./tests_runs/{sheet}/{test.name}/saved_model", custom_objects={"dice_coeff_orig_loss": l.dice_coeff_orig_loss,
+                                                                                                                   "dice_coeff_orig": l.dice_coeff_orig,
+                                                                                                                   "categorical_cross_entropy": l.categorical_cross_entropy,
+                                                                                                                   "categorical_cross_entropy_weighted_loss": l.categorical_cross_entropy_weighted_loss,
+                                                                                                                   "categorical_focal_loss_fixed": l.categorical_focal_loss_fixed,
+                                                                                                                   "iou_nobacground": l.iou_nobacground})

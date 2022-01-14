@@ -20,15 +20,8 @@ for test in reader:
     poly = True if "poly" in sheet or "multiclass" not in test.train_dataset else False
 
     ##LOAD MODEL###################
-    model = load_model("./excel/{}/{}/{}.h5".format(sheet, test.name, test.name),
-                       custom_objects={"dice_coeff_orig_loss":dice_coeff_orig_loss,
-                                       "dice_coeff_orig":dice_coeff_orig,
-                                       "categorical_cross_entropy":categorical_cross_entropy,
-                                       "categorical_cross_entropy_weighted_loss":categorical_cross_entropy_weighted_loss,
-                                       "categorical_focal_loss_fixed":categorical_focal_loss_fixed,
-                                       "weighted_dice_coef_loss":weighted_dice_coef_loss,
-                                       "iou_nobacground":iou_nobacground,
-                                       })#"mse_loss":mse_loss})
+
+    model = load_model_(test.load_model)
 
     # model.trainable = False
     # model.use_learning_phase = False
@@ -59,6 +52,6 @@ for test in reader:
             pred = pred * 255
             img = Image.fromarray(pred[:,:,0].astype(np.uint8))
 
-        save_name = f"./excel/{sheet}/{test.name}/test_results/{filenames[step][-58:].replace('/', '_')}"
-        save_name = save_name.replace("jpg", "tiff")
-        img.save(save_name)
+        save_name = "./tests_runs/{}/{}/test_results/{}".format(sheet, test.name, filenames[step][-58:].replace("/", "_"))
+        save_name = save_name.replace("jpg", "png")
+        img.save(save_name)#, dpi=(1000, 1000))

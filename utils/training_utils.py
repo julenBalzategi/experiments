@@ -383,8 +383,9 @@ def sample_batch(list_train, batch_size, classes):
 
 
 def load_model_(path):
-    import losses  as l
-    model = load_model(path,
+    if ".h5" in path:
+        import losses  as l
+        model = load_model(path,
                        custom_objects={"dice_coeff_orig_loss": l.dice_coeff_orig_loss,
                                        "dice_coeff_orig": l.dice_coeff_orig,
                                        "categorical_cross_entropy": l.categorical_cross_entropy,
@@ -392,7 +393,9 @@ def load_model_(path):
                                        "categorical_focal_loss_fixed": l.categorical_focal_loss_fixed,
                                        "iou_nobacground": l.iou_nobacground}
                        )
-
+    else:
+        model = mlflow.keras.load_model(path)
+    
     # for i in range(len(model.layers[:-1])):
     #     model.layers[i].trainable = False
     return model
