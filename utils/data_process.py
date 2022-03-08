@@ -11,19 +11,30 @@ def mask_to_one_hot(mask, num_classes):
 
     return mask_ret
 
+
 def adjust_data(img,mask):
 
-    img = img / 255
+    # img = img / 255
     mask = mask / 255
-    #mask = np.where(mask > 0.8, 0, 1) #mono
-    mask = np.where(mask > 0.8, 1, 0) #poly
+    # mask = np.where(mask > 0, 0, 1) #mono
+    mask = np.where(mask > 0.8, 1, 0) #mono# methodology_chapter_test15_tmp
+    # mask = np.where(mask > 0.8, 1, 0) #poly
 
     return (img,mask)
 
+
+
+def ahe_processing(img):
+    img_adapteq = CLAHE(img, clip_limit=0.03)
+    return img_adapteq
+
+
 def unet_preprocess(img):
-    img = img / 255
-    img = CLAHE(img, clip_limit=0.03)
-    img = np.expand_dims(img, axis=0)
+    if np.max(img) > 1:
+        img = img / 255
+    img = ahe_processing(img)
+    # img = np.expand_dims(img, axis=2)
+    # img = np.expand_dims(img, axis=0)
 
     return img
 
@@ -42,6 +53,7 @@ def flip(img, mask):
 
     return img, mask
 
+
 def rotation(img, mask):
     number = random.randint(1, 4)
     (h, w) = img.shape[:2]
@@ -58,6 +70,7 @@ def rotation(img, mask):
     img = cv2.warpAffine(img, M, (w, h))
     mask = cv2.warpAffine(mask, M, (w, h))
     return img, mask
+
 
 def get_augmented(aug, img, mask):
     if aug == "AHE":

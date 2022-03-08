@@ -76,13 +76,9 @@ for test in reader:
         with open("model_summary.txt", "w") as f:
             f.write(summary)
         mlflow.log_artifact("model_summary.txt")
+        all_losses = {o[0]:o[1] for o in getmembers(losses) if isfunction(o[1])}
+        mlflow.keras.log_model(model, "models", custom_objects=all_losses)
 
-        mlflow.keras.log_model(model, "models", custom_objects={"dice_coeff_orig_loss": dice_coeff_orig_loss,
-                                                            "dice_coeff_orig": dice_coeff_orig,
-                                                            "categorical_cross_entropy": categorical_cross_entropy,
-                                                            "categorical_cross_entropy_weighted_loss": categorical_cross_entropy_weighted_loss,
-                                                            "categorical_focal_loss_fixed": categorical_focal_loss_fixed,
-                                                            "iou_nobacground": iou_nobacground})
         gpu = test.gpu.split(",")
         if len(gpu) > 1:
             model = multi_gpu_model(model, gpus=len(gpu))
@@ -91,7 +87,7 @@ for test in reader:
             model = load_model_(test.load_model)
 
         # todo fix the weighted version of loss and parameter passing
-        model.compile(optimizer=getattr(optim, test.optim)(lr=float(test.lr), decay=float(test.decay)),
+        model.compile(optimizer=training_utils.get_optimizer(test.optim, lr=float(test.lr), decay=float(test.decay)),
                       loss=getattr(losses, test.loss),
                       metrics=["accuracy"])
 

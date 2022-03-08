@@ -1,3 +1,9 @@
+
+from numpy.random import choice
+
+from inspect import getmembers, isfunction
+from tensorflow.python.keras.models import load_model
+from tensorflow.keras.optimizers import Adam, RMSprop
 import mlflow
 
 import glob
@@ -16,6 +22,7 @@ from keras.models import load_model
 import re
 from PIL import Image
 import itertools
+import losses
 
 imgs_type = ["bmp", "jpg", "tiff"]
 
@@ -33,6 +40,7 @@ def get_train_generator(train_generator, batch_size, train_path, num_img, target
         generator = trainGenerator(batch_size, train_path, target_size=target_size, aug=aug, folds=folds, cell_types=cell_types)
 
     return generator
+
 
 #TODO: refactor to consider new folder order
 def trainGenerator(batch_size, train_path, num_class = 2, target_size=(400, 400), aug="None", folds=None, cell_types=None):
@@ -244,11 +252,14 @@ def train_generator_multiclass(batch_size, train_path, num_img, target_size, aug
         y.clear()
 
 class LossRecorder(Callback):
-    def __init__(self):
+    def __init__(self, loss_name):
         super().__init__()
+        self.name = loss_name
+        self.step = 1
 
     def on_epoch_end(self, epoch, logs=None):
-        mlflow.log_metric("Dice", logs["loss"])
+        mlflow.log_metric(self.name, logs["loss"], step=self.step)
+        self.step += 1
         # mlflow.log_metric("Accuracy", logs.accuracy)
 
 class TrainCheck(Callback):
@@ -384,14 +395,9 @@ def sample_batch(list_train, batch_size, classes):
 
 def load_model_(path):
     if ".h5" in path:
-        import losses  as l
+        all_losses = {o[0]:o[1] for o in getmembers(losses) if isfunction(o[1])}
         model = load_model(path,
-                       custom_objects={"dice_coeff_orig_loss": l.dice_coeff_orig_loss,
-                                       "dice_coeff_orig": l.dice_coeff_orig,
-                                       "categorical_cross_entropy": l.categorical_cross_entropy,
-                                       "categorical_cross_entropy_weighted_loss": l.categorical_cross_entropy_weighted_loss,
-                                       "categorical_focal_loss_fixed": l.categorical_focal_loss_fixed,
-                                       "iou_nobacground": l.iou_nobacground}
+                       custom_objects=all_losses
                        )
     else:
         model = mlflow.keras.load_model(path)
@@ -401,3 +407,10 @@ def load_model_(path):
     return model
 
 
+def get_optimizer(optimizer, lr, decay):
+    #This way of importing optimizers is due to how Tensorflow encapsulates the functions
+
+    if optimizer == "Adam":
+        return Adam(learning_rate=lr, decay=decay)
+    if optimizer == "RMSprop":
+        return RMSprop(learning_rate=lr, decay=decay)

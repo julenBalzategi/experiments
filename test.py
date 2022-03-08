@@ -15,6 +15,7 @@ test_dataset = "/home/jbalzategi/datasets/dataset_solar/mono_cross/defective/by_
 sheet = "cross_validation_mono"
 reader = ExcelReader("./excel/Libro3.xlsx", sheet)
 
+mlflow.set_tracking_uri("http://127.0.0.1:8080")
 
 for test in reader:
     poly = True if "poly" in sheet or "multiclass" not in test.train_dataset else False
