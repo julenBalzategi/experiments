@@ -284,7 +284,9 @@ class TrainCheck(Callback):
 
         img = cv2.imread(path)
         img = cv2.resize(img, (self.input_size, self.input_size))
-        img = getattr(data_process, self.train_preprocess)(img)
+        if hasattr(data_process, self.train_preprocess):
+            img = getattr(data_process, self.train_preprocess)(img)
+        img = np.expand_dims(img, axis=0)  # todo: tmp methodology chapter
 
         pred = self.model.predict(img)
         pred = pred[0] * 255
@@ -408,8 +410,6 @@ def load_model_(path):
 
 
 def get_optimizer(optimizer, lr, decay):
-    #This way of importing optimizers is due to how Tensorflow encapsulates the functions
-
     if optimizer == "Adam":
         return Adam(learning_rate=lr, decay=decay)
     if optimizer == "RMSprop":

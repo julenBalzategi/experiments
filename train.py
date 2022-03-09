@@ -1,9 +1,12 @@
 import mlflow
-
+from mlflow.tracking import MlflowClient
+from inspect import getmembers, isfunction
+from utils.folder_creator import create_experiment_folder
 from tensorflow.keras.callbacks import ModelCheckpoint
 from utils.training_utils import get_train_generator, TrainCheck, load_model_
-import tensorflow.keras.optimizers as optim
 from tensorflow.python.keras.utils.multi_gpu_utils import multi_gpu_model
+
+from tensorflow.python.keras.callbacks import EarlyStopping, TensorBoard
 
 from utils.excel_reader import ExcelReader
 from utils import training_utils
@@ -33,7 +36,7 @@ exp_id = exp_info.experiment_id if exp_info else MlflowClient().create_experimen
 
 for test in reader:
     # mlflow.keras.autolog()
-    with mlflow.start_run(experiment_id=exp_id) as run:
+    with mlflow.start_run(experiment_id=exp_id, run_name=f"{sheet}_{test.name}") as run:
         run_num = run.run_id = run.info.run_uuid
 
         create_experiment_folder(test.name, sheet)
@@ -52,17 +55,19 @@ for test in reader:
 
         ##INITIALIZE CALLBACKS########
 
-        checkpoint = ModelCheckpoint(
-            filepath="./excel/{}/{}/{}_checkpoint.h5".format(sheet, test.name, test.name),
-            # monitor='val_' + test_idx['metric'].__name__, #the variable to monitor and save the state with the best value
-            monitor=test.metrics,
-            save_best_only=True,
-            save_weights_only=True)
+        earlyStopping = EarlyStopping(monitor="loss", patience=30)
 
         train_check = getattr(training_utils, test.train_check)(sheet, test.name, test.input_size, test.train_preprocess,
                                                                 poly=poly, visualize_images=test.visualize_images)
 
-        loss_recorder = training_utils.LossRecorder()
+        loss_recorder = training_utils.LossRecorder(test.loss)
+
+        TB_callback = TensorBoard(log_dir="./models/{}_{}".format(sheet, test.name),
+                                  write_grads=True,
+                                  write_images=True,
+                                  # histogram_freq=1,
+                                  batch_size=4,
+                                  write_graph=True)
 
         ##INITIALIZE MODEL###########
         model = getattr(models, test.model)(input_size=(test.input_size, test.input_size, 3),  # 1
@@ -73,9 +78,10 @@ for test in reader:
         summary = []
         model.summary(print_fn=summary.append)
         summary = "\n".join(summary)
-        with open("model_summary.txt", "w") as f:
+        with open(f"./tests_runs/{sheet}/{test.name}/model_summary.txt", "w") as f:
             f.write(summary)
-        mlflow.log_artifact("model_summary.txt")
+        mlflow.log_artifact(f"./tests_runs/{sheet}/{test.name}/model_summary.txt")
+
         all_losses = {o[0]:o[1] for o in getmembers(losses) if isfunction(o[1])}
         mlflow.keras.log_model(model, "models", custom_objects=all_losses)
 
@@ -85,12 +91,18 @@ for test in reader:
 
         if test.load_model != "N":
             model = load_model_(test.load_model)
+        else:
+            #todo save model
+            pass
+            #just because a bug in mlflow
+            # model.save(f"./tests_runs/{sheet}/{test.name}/{sheet}_{test.name}_model.h5")
 
         # todo fix the weighted version of loss and parameter passing
         model.compile(optimizer=training_utils.get_optimizer(test.optim, lr=float(test.lr), decay=float(test.decay)),
                       loss=getattr(losses, test.loss),
                       metrics=["accuracy"])
 
+        train_dataset = test.train_dataset
         generator = get_train_generator(train_generator=test.train_generator,
                                         batch_size=test.batch,
                                         train_path=train_dataset,
@@ -100,7 +112,8 @@ for test in reader:
                                         num_classes=int(test.num_classes),
                                         classes=test.classes.split(","),
                                         folds=test.folds.split(","),
-                                        cell_types=str(test.cell_types).split(","))
+                                        cell_types=str(test.cell_types).split(","),
+                                        )
 
         generator_val = get_train_generator(train_generator=test.train_generator,
                                             batch_size=test.batch,
@@ -119,27 +132,12 @@ for test in reader:
             validation_data=generator_val,
             validation_steps=test.val_steps,
             steps_per_epoch=test.steps,
-            callbacks=[checkpoint, train_check, loss_recorder],
+            callbacks=[train_check, TB_callback, loss_recorder],  # checkpoint, plot_callback], #, earlyStopping],
             epochs=test.epoch,
             verbose=1)
 
-        ##SAVE MODEL###################
-        model.save("./tests_runs/{}/{}/{}.h5".format(sheet, test.name, test.name))
-#        mlflow.keras.save_model(model, f"/home/jbalzategi/experiments/tests_runs/{sheet}/{test.name}")
-
-        # model_json = model.to_json()
-        # with open("./tests_runs/{}/{}/{}_model_arch.json".format(sheet, test.name, test.name), "w") as json_file:
-        #     json_file.write(model_json)
-        # # serialize weights to HDF5
-        # model.save_weights("./tests_runs/{}/{}/{}_model_weights.h5".format(sheet, test.name, test.name))
-
-        # history_dict = history.history
-        # json.dump(history_dict, open("./tests/{}/{}/{}_json_history_orig.json".format(sheet, test.name, test.name), 'w'))
-
         mlflow.log_artifacts(f"./tests_runs/{sheet}/{test.name}/")
-        mlflow.keras.save_model(model, f"./tests_runs/{sheet}/{test.name}/saved_model", custom_objects={"dice_coeff_orig_loss": l.dice_coeff_orig_loss,
-                                                                                                                   "dice_coeff_orig": l.dice_coeff_orig,
-                                                                                                                   "categorical_cross_entropy": l.categorical_cross_entropy,
-                                                                                                                   "categorical_cross_entropy_weighted_loss": l.categorical_cross_entropy_weighted_loss,
-                                                                                                                   "categorical_focal_loss_fixed": l.categorical_focal_loss_fixed,
-                                                                                                                   "iou_nobacground": l.iou_nobacground})
+        mlflow.keras.save_model(model, f"./tests_runs/{sheet}/{test.name}/saved_model", custom_objects=all_losses)
+
+        ##SAVE MODEL###################
+        model.save(f"./tests_runs/{sheet}/{test.name}/{sheet}_{test.name}_model.h5")
